@@ -6,6 +6,12 @@ set -euo pipefail
 
 TARGET_OS="$1"
 
+# 加载代理变量（幂等，已配置则跳过）
+SCRIPT_DIR="$(dirname "$0")"
+# shellcheck source=/dev/null
+source "$SCRIPT_DIR/00-proxy.sh"
+configure_proxy "skip"
+
 log_info() { echo -e "${BLUE}[INFO]${NC}  $1"; }
 log_ok()   { echo -e "${GREEN}[OK]${NC}    $1"; }
 

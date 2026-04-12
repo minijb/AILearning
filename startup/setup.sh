@@ -70,6 +70,33 @@ run_step() {
     log "STEP" "<<< 完成 $script"
 }
 
+# ── 代理配置 ───────────────────────────────────────────────
+SCRIPT_DIR="$(dirname "$0")"
+PROXY_SCRIPT="$SCRIPT_DIR/scripts/00-proxy.sh"
+
+configure_proxy_interactive() {
+    echo
+    echo -n "是否配置网络代理? [y/N]: "
+    read -r want_proxy
+    if [ "$want_proxy" = "y" ] || [ "$want_proxy" = "Y" ]; then
+        # shellcheck source=/dev/null
+        source "$PROXY_SCRIPT"
+        configure_proxy
+        # 将代理变量 export 到子进程
+        [ -n "${PROXY_URL:-}" ] && {
+            export http_proxy="$PROXY_URL"
+            export https_proxy="$PROXY_URL"
+            export HTTP_PROXY="$PROXY_URL"
+            export HTTPS_PROXY="$PROXY_URL"
+            export no_proxy="localhost,127.0.0.1"
+            export NO_PROXY="localhost,127.0.0.1"
+        }
+    else
+        source "$PROXY_SCRIPT"
+        configure_proxy "skip"
+    fi
+}
+
 # ── 主流程 ─────────────────────────────────────────────────
 main() {
     TARGET_OS="$(detect_os)"
@@ -91,6 +118,10 @@ main() {
         log_info "已取消安装"
         exit 0
     fi
+    echo
+
+    # 代理配置（在步骤执行前）
+    configure_proxy_interactive
     echo
 
     log_info "开始部署..."

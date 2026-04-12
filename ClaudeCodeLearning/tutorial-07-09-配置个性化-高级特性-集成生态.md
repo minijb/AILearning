@@ -16,7 +16,7 @@
     - [1.5 允许的工具列表](#15-允许的工具列表)
   - [第二章：高级特性](#第二章高级特性)
     - [2.1 MCP 服务器](#21-mcp-服务器)
-    - [2.2 Hooks 钩子机制](#22-hooks-钩子机制)
+    - [2.2 Hooks 钩子机制](#22-hooks-钩子机制) (详见 `tutorial-03-06`)
     - [2.3 CLAUDE.md 项目文档](#23-claudemd-项目文档)
     - [2.4 上下文管理](#24-上下文管理)
   - [第三章：集成与生态](#第三章集成与生态)
@@ -367,93 +367,36 @@ main();
 
 ### 2.2 Hooks 钩子机制
 
-Hooks 允许在工具执行前后自动运行脚本，实现自动化工作流。
+> Hooks 的完整系统说明、事件类型、匹配器语法和实战案例，参见 `tutorial-03-06-Agent-Skill-斜杠命令-工具详解.md` 第二章。以下是快速配置参考。
 
-#### 可用的钩子类型
+**核心事件速查：**
 
-| 钩子 | 触发时机 | 常见用途 |
-|------|----------|----------|
-| `PreToolUse` | 工具执行前 | 验证、日志、拦截 |
-| `PostToolUse` | 工具执行后 | 后续处理、通知 |
-| `PreCommand` | 命令执行前 | 环境检查、准备 |
-| `PostCommand` | 命令执行后 | 格式化输出、通知 |
-| `OnDiskToolUse` | 磁盘工具执行时 | 路径验证、权限检查 |
+| 事件 | 触发时机 | 常见用途 |
+|------|----------|---------|
+| `PreToolUse` | 工具执行前 | 验证、拦截 |
+| `PostToolUse` | 工具执行后 | 自动格式化、通知 |
+| `SessionStart` | 会话开始时 | 恢复上下文 |
+| `SessionEnd` | 会话结束时 | 保存状态 |
 
-#### 配置示例
-
-```json
-{
-  "hooks": {
-    "PostCommand": {
-      "command": "notify-send 'Claude Code' 'Command completed'",
-      "description": "命令完成后发送桌面通知"
-    },
-    "PreCommand": {
-      "command": "echo 'Starting...'",
-      "description": "记录开始时间"
-    },
-    "PreToolUse": {
-      "command": "logger.sh",
-      "args": ["${toolName}", "${toolInput}"],
-      "description": "记录工具调用日志"
-    }
-  }
-}
-```
-
-#### 实用钩子场景
-
-| 场景 | 钩子配置 |
-|------|----------|
-| 自动格式化 | `PostCommand` 运行 Prettier |
-| 提交前检查 | `PreCommand` 验证代码风格 |
-| 性能监控 | `PostCommand` 记录执行时间 |
-| 团队通知 | `PostCommand` 发送 Slack 消息 |
-| 日志记录 | `PreToolUse` 记录所有操作 |
-
-**自动格式化钩子：**
+**快速配置示例：**
 
 ```json
 {
   "hooks": {
     "PostToolUse": {
-      "toolNames": ["Edit", "Write"],
-      "command": "npx prettier --write ${targetFile}",
-      "description": "文件修改后自动格式化"
+      "matcher": "Edit|Write",
+      "hooks": [{
+        "type": "command",
+        "command": "npx prettier --write ${targetFile}"
+      }]
     }
   }
 }
 ```
 
-**Git 提交钩子：**
-
-```json
-{
-  "hooks": {
-    "PreCommand": {
-      "command": "echo 'Running pre-commit checks...'",
-      "description": "提交前检查"
-    }
-  }
-}
-```
-
-**桌面通知钩子：**
-
-```json
-{
-  "hooks": {
-    "PostCommand": {
-      "command": "osascript -e 'display notification \"Command completed\" with title \"Claude Code\"'",
-      "description": "命令完成后发送 macOS 通知"
-    }
-  }
-}
-```
+完整说明和退出码控制参见 `tutorial-03-06-Agent-Skill-斜杠命令-工具详解.md`。
 
 ### 2.3 CLAUDE.md 项目文档
-
-CLAUDE.md 是项目的说明文档，帮助 Claude Code 更好地理解项目。
 
 #### 为什么需要 CLAUDE.md
 
